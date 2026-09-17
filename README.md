@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FUL Health Services — Hospital Management System
 
-## Getting Started
+Federal University Lokoja, University Health Services. Next.js + Drizzle +
+Postgres, deployed on Netlify. The functional core is the **Patient Health &
+Symptom Tracker**.
 
-First, run the development server:
+## What it does
+
+| # | Requirement | Where it lives |
+|---|---|---|
+| 1 | Record new symptoms and body changes before the next appointment | `/tracker/new` → `components/tracker-form.tsx` |
+| 2 | Symptom, severity (1–5), date, short description | `lib/validation.ts` → `trackerEntrySchema` |
+| 3 | Basic measurements — temperature and weight | same form, `measurement` entry kind |
+| 4 | Patients view previous entries | `/tracker`, `/dashboard` |
+| 5 | History of symptoms and body changes | `tracker_entries` table, grouped by month in the UI |
+| 6 | Authorised doctors/nurses view the tracker during consultation | `/staff/patients/[id]`, guarded by `requireClinician()`, every read written to `record_access_log` |
+| 7 | Summary of what changed since the last appointment | `lib/summary.ts` → `SummaryPanel` |
+| 8 | Tracker stored as part of the medical record | consultation notes save the reviewed tracker window (`reviewed_from/to/entry_count`) |
+
+Around the tracker: patient registration and sign-in, appointment requests and
+cancellation, a clinic schedule, patient search, and clinician consultation
+notes.
+
+## Stack
+
+- **Next.js 16** (App Router, server actions) + TypeScript + Tailwind v4
+- **Drizzle ORM** on Postgres (Neon or any pooled Postgres URL)
+- **motion** for the interface animation, **lucide-react** for icons
+- Sessions: scrypt password hashes + an HMAC-signed httpOnly cookie (no auth
+  dependency)
+- **Netlify** via `@netlify/plugin-nextjs`
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env     # fill in DATABASE_URL and SESSION_SECRET
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Generate a session secret:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Apply the schema to the cloud database first
 
-## Learn More
+Deploying before the DDL exists takes the app down, so run it first:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+psql "$DATABASE_URL" -f drizzle/schema.sql     # idempotent, safe to re-run
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+or paste `drizzle/schema.sql` into the Neon SQL editor. Verify:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```sql
+SELECT table_name FROM information_schema.tables
+ WHERE table_schema = 'public' ORDER BY table_name;
+-- appointments, consultation_notes, patients, record_access_log,
+-- staff_profiles, tracker_entries, users
+```
 
-## Deploy on Vercel
+### 2. Seed demo accounts (optional)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run seed
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Creates `doctor@fulokoja.edu.ng`, `nurse@fulokoja.edu.ng` and
+`student@fulokoja.edu.ng` (password from `SEED_PASSWORD`), with three weeks of
+tracker history for the student.
+
+### 3. Run
+
+```bash
+npm run dev      # http://localhost:3000
+npm run check    # runs the tracker-summary assertions
+npm run build
+```
+
+## Deploying to Netlify
+
+1. Push the branch — the Netlify git integration builds it. Do not use the CLI.
+2. Set `DATABASE_URL` and `SESSION_SECRET` in **Site settings → Environment
+   variables**. They are read at build time, so add them before the build, and
+   re-deploy after changing one.
+3. Use the **pooled** connection string (`-pooler` host on Neon).
+
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `npm run dev` | Local development server |
+| `npm run build` | Production build |
+| `npm run check` | Assertions for the summary logic in `lib/summary.ts` |
+| `npm run db:generate` | Regenerate SQL from `lib/schema.ts` after a schema change |
+| `npm run db:push` | Push the schema straight to `DATABASE_URL` |
+| `npm run seed` | Seed clinic staff and the demo patient |
+
+## Structure
+
+```
+app/
+  page.tsx                     landing
+  login/  register/            authentication
+  (portal)/                    signed-in shell (sidebar, role-aware nav)
+    dashboard/                 patient home + summary since last visit
+    tracker/  tracker/new/     history and entry form
+    appointments/              request, list, cancel
+    staff/                     patient search + clinic stats
+    staff/schedule/            appointments from today onward
+    staff/patients/[id]/       consultation view + note + access log
+lib/
+  schema.ts  db.ts             Drizzle schema and lazy pooled client
+  auth.ts  password.ts         sessions, guards, scrypt hashing
+  validation.ts                Zod schemas — every write validates here first
+  queries.ts  actions.ts       reads and server actions
+  summary.ts                   the "since last appointment" summary
+components/                    brand, shell, forms, charts, motion primitives
+drizzle/schema.sql             idempotent DDL to run before deploying
+```
+
+## Design
+
+Colours and the crest come from the university portal at
+[ug.fulokoja.edu.ng](http://ug.fulokoja.edu.ng/): navy `#49668f`, deep navy
+`#26374f`, teal `#45aebd`, gold `#e8a33d`, on a `#fbfdff` surface, set in
+Nunito. Severity uses a single-hue ordinal ramp with monotonic lightness and
+always shows its number and label, so it stays readable for colourblind users
+and in print. Motion respects `prefers-reduced-motion`.

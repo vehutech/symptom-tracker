@@ -1,26 +1,107 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Federal University Lokoja brand palette, sampled from ug.fulokoja.edu.ng
+   and the institutional crest: navy shield, teal figure, gold open book. */
+@theme {
+  --color-brand-50: #f4f8ff;
+  --color-brand-100: #eef4ff;
+  --color-brand-200: #d8e4f6;
+  --color-brand-300: #a8bcd8;
+  --color-brand-400: #7b96bf;
+  --color-brand-500: #5f7ca6;
+  --color-brand-600: #49668f;
+  --color-brand-700: #33496b;
+  --color-brand-800: #26374f;
+  --color-brand-900: #1b2a40;
+
+  --color-teal-50: #f0fbfd;
+  --color-teal-100: #d9f4f8;
+  --color-teal-300: #9ee4ed;
+  --color-teal-500: #45aebd;
+  --color-teal-600: #2f8fa0;
+  --color-teal-700: #236f7d;
+
+  --color-gold-400: #f0bd63;
+  --color-gold-500: #e8a33d;
+  --color-gold-600: #c9842a;
+
+  /* Severity is ordinal, so it uses one hue with monotonic lightness rather than
+     a green-to-red categorical set (which fails colourblind separation). Every
+     use is paired with the number and its label, never colour alone. */
+  --color-sev-1: #f6c7b8;
+  --color-sev-2: #ef9f83;
+  --color-sev-3: #e2703a;
+  --color-sev-4: #cf4f34;
+  --color-sev-5: #a92f26;
+
+  --color-surface: #fbfdff;
+  --color-ink: #26374f;
+  --color-ink-muted: #64748b;
+
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -18px rgba(38, 55, 79, 0.45);
+  --shadow-lift: 0 2px 4px rgba(15, 23, 42, 0.05), 0 28px 60px -28px rgba(38, 55, 79, 0.55);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient background used by the marketing and auth screens. */
+.brand-aurora {
+  background:
+    radial-gradient(60rem 40rem at 12% -10%, rgba(69, 174, 189, 0.22), transparent 60%),
+    radial-gradient(48rem 34rem at 92% 6%, rgba(73, 102, 143, 0.28), transparent 62%),
+    radial-gradient(40rem 30rem at 50% 110%, rgba(232, 163, 61, 0.16), transparent 60%);
+}
+
+.brand-grid {
+  background-image:
+    linear-gradient(rgba(73, 102, 143, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(73, 102, 143, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 100%);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(216, 228, 246, 0.9);
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  70% { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+.pulse-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  animation: pulse-ring 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .pulse-ring::after { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+::selection {
+  background: var(--color-teal-300);
+  color: var(--color-brand-900);
 }
