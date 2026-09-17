@@ -8,15 +8,13 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
 import * as schema from "../lib/schema";
+import { databaseUrl } from "../lib/db";
 import { hashPassword } from "../lib/password";
 
 const { users, patients, staffProfiles, appointments, trackerEntries, consultationNotes } = schema;
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL is not set — add it to .env before seeding.");
-
 const password = process.env.SEED_PASSWORD ?? "ChangeMe123!";
-const client = postgres(url, { max: 1, prepare: false });
+const client = postgres(databaseUrl(), { max: 1, prepare: false });
 const db = drizzle(client, { schema });
 
 const daysAgo = (days: number) => {

@@ -34,8 +34,12 @@ notes.
 
 ```bash
 npm install
-cp .env.example .env     # fill in DATABASE_URL and SESSION_SECRET
+cp .env.example .env     # fill in the database URL and SESSION_SECRET
 ```
+
+The connection string is read from `DATABASE_URL`, `NETLIFY_DATABASE_URL`
+(injected automatically by Netlify DB) or `POSTGRESQL_URL` — first one found
+wins, so a Netlify DB needs no extra configuration on the platform.
 
 Generate a session secret:
 
@@ -81,10 +85,11 @@ npm run build
 ## Deploying to Netlify
 
 1. Push the branch — the Netlify git integration builds it. Do not use the CLI.
-2. Set `DATABASE_URL` and `SESSION_SECRET` in **Site settings → Environment
-   variables**. They are read at build time, so add them before the build, and
-   re-deploy after changing one.
-3. Use the **pooled** connection string (`-pooler` host on Neon).
+2. Set `SESSION_SECRET` in **Site settings → Environment variables**. A Netlify
+   DB already provides `NETLIFY_DATABASE_URL`; for any other Postgres set
+   `DATABASE_URL` to its **pooled** connection string. Environment variables are
+   read at build time — add them before the build and re-deploy after a change.
+3. Run `drizzle/schema.sql` against that database before the first deploy.
 
 ## Scripts
 
