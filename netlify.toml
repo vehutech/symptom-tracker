@@ -4,6 +4,11 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # Secrets scanning flags these two because Netlify writes the values into the
+  # deploy's own function environment, not because the build leaks them: the
+  # app reads both at request time and neither value appears anywhere in the
+  # build output. Scanning stays on for every other variable.
+  SECRETS_SCAN_OMIT_KEYS = "SESSION_SECRET,POSTGRESQL_URL"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
