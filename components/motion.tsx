@@ -77,25 +77,26 @@ export function AnimatedNumber({
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   const reduced = useReducedMotion();
-  const [shown, setShown] = useState(reduced ? value : 0);
+  const [progress, setProgress] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!inView || reduced) {
-      setShown(value);
-      return;
-    }
+    if (!inView || reduced) return;
+
     let frame = 0;
+    let raf = 0;
     const steps = 28;
     const tick = () => {
       frame += 1;
-      const progress = 1 - Math.pow(1 - frame / steps, 3);
-      setShown(Number((value * progress).toFixed(decimals)));
-      if (frame < steps) requestAnimationFrame(tick);
-      else setShown(value);
+      const eased = 1 - Math.pow(1 - frame / steps, 3);
+      setProgress(frame < steps ? Number((value * eased).toFixed(decimals)) : value);
+      if (frame < steps) raf = requestAnimationFrame(tick);
     };
-    const id = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(id);
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [inView, value, decimals, reduced]);
+
+  const shown = reduced ? value : inView ? (progress ?? 0) : 0;
 
   return (
     <span ref={ref}>

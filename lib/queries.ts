@@ -88,7 +88,7 @@ export async function getNextAppointment(patientId: string) {
 }
 
 export async function listAppointments(patientId: string) {
-  return getDb()
+  const rows = await getDb()
     .select({
       id: appointments.id,
       scheduledFor: appointments.scheduledFor,
@@ -102,6 +102,13 @@ export async function listAppointments(patientId: string) {
     .where(eq(appointments.patientId, patientId))
     .orderBy(desc(appointments.scheduledFor))
     .limit(50);
+
+  // Cancellable state is decided here, not during render.
+  const now = Date.now();
+  return rows.map((row) => ({
+    ...row,
+    cancellable: row.status === "scheduled" && row.scheduledFor.getTime() > now,
+  }));
 }
 
 /**

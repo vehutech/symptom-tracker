@@ -43,10 +43,6 @@ export default async function AppointmentsPage() {
                 {appointments.map((appointment) => {
                   const meta = STATUS[appointment.status];
                   const Icon = meta.icon;
-                  const upcoming =
-                    appointment.status === "scheduled" &&
-                    appointment.scheduledFor.getTime() > Date.now();
-
                   return (
                     <StaggerItem key={appointment.id}>
                       <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
@@ -67,7 +63,7 @@ export default async function AppointmentsPage() {
                             <p className="text-xs text-ink-muted">seen by {appointment.staffName}</p>
                           ) : null}
                         </div>
-                        {upcoming ? <CancelAppointmentForm appointmentId={appointment.id} /> : null}
+                        {appointment.cancellable ? <CancelAppointmentForm appointmentId={appointment.id} /> : null}
                       </Card>
                     </StaggerItem>
                   );
